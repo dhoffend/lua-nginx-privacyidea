@@ -55,7 +55,8 @@ end
 
 function password_hash(password, salt)
     -- yes this can be improved by using sha512, bcrypt, etc
-    local digest = ngx.hmac_sha1(salt, password)
+    local salt2 = ngx.sha1_bin(salt .. ':' .. password)
+    local digest = ngx.hmac_sha1(salt2, password)
     return ngx.encode_base64(digest)
 end
 
@@ -108,13 +109,13 @@ function privacyidea_validate(username, password)
                 err = err .. ': ' .. answer.detail.message
             end
         end
-        if answer.result.error then 
+        if answer.result.error then
             if answer.result.error.message then
                 err = err .. ': ' .. answer.result.error.message
             end
         end
     end
-    return ok, err 
+    return ok, err
 end
 
 -- --------------------
@@ -134,19 +135,18 @@ function authenticate()
         return false
     end
 
-    -- open redis connection    
+    -- open redis connection
     local redis_host = ngx.var.privacyidea_redis_host or '127.0.0.1'
     local redis_port = ngx.var.privacyidea_redis_port or 6379
     local ttl = ngx.var.privacyidea_ttl or 900
     local red = redis_connect(redis_host, redis_port)
 
     -- lookup key and hash
-    local salt = ngx.var.privacyidea_salt or '1234567890123456'
     local key = generate_key(username)
     local value = red:get(key)
 
     -- password hash ok => extend ttl and return username if status is ok
-    if value and password_verify(password, value, salt) then
+    if value and password_verify(password, value, key) then
         red:expire(key,ttl)
         return username
 
@@ -155,7 +155,7 @@ function authenticate()
         local ok, err = privacyidea_validate(username, password)
         if ok then
             ngx.log(ngx.ERR, '[' .. username .. '] authentication ok')
-            red:setex(key, ttl, password_hash(password, salt))
+            red:setex(key, ttl, password_hash(password, key))
             return username
         else
             ngx.log(ngx.ERR, '[' .. username .. '] invalid authentication' .. err)

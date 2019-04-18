@@ -74,7 +74,7 @@ function privacyidea_validate(username, password)
     local params = {user = username, pass = password}
     local realm = ngx.var.privacyidea_realm or nil
     if realm then
-        params['realm'] = auth_realm
+        params['realm'] = realm
     end
 
     -- send request

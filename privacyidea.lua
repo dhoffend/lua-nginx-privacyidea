@@ -70,6 +70,8 @@ end
 
 function privacyidea_validate(username, password)
 
+    local httpc = require("resty.http").new()
+
     -- prepare parameter
     local params = {user = username, pass = password}
     local realm = ngx.var.privacyidea_realm or nil
@@ -78,12 +80,18 @@ function privacyidea_validate(username, password)
     end
 
     -- send request
-    ngx.req.set_header('Content-Type', 'application/x-www-form-urlencoded')
     local uri = ngx.var.privacyidea_uri or '/privacyidea-validate-check'
-    local res = ngx.location.capture(uri, {
-        method = ngx.HTTP_POST,
-        body = ngx.encode_args(params)
+
+    local res, err = httpc:request_uri(uri, {
+        method = "POST",
+        body = ngx.encode_args(params),
+        headers = {
+            ["Content-Type"] = "application/x-www-form-urlencoded",
+        },
     })
+    if not res then
+        return false, 'privacyIDEA HTTP Request Error ' .. err
+    end
 
     if res.status ~= 200 then
         return false, 'privacyIDEA HTTP Status ' .. res.status

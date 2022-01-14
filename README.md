@@ -8,8 +8,8 @@ cache the result for a defined lifetime.
 Redis is providing the server side cache (for successful HTTP Basic
 Authentications) similar to the privacyIDEA apache2 authentication module.
 
-The lua script only requires the basic nginx-lua, lua-nginx-redis and
-lua-cjson module to be available
+The lua script requires the basic nginx-lua, lua-cjson, lua-nginx-redis and
+lua-resty-http modules to be available.
 
 Configuration
 -------------
